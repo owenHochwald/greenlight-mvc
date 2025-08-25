@@ -13,10 +13,10 @@ import (
 func (app *application) createMovieHandler(c *gin.Context) {
 
 	var input struct {
-		Title   string   `json:"title"`
-		Year    int      `json:"year"`
-		Runtime int      `json:"runtime"`
-		Genres  []string `json:"genres"`
+		Title   string       `json:"title"`
+		Year    int          `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+		Genres  []string     `json:"genres"`
 	}
 
 	if err := app.readJSON(c, &input); err != nil {
