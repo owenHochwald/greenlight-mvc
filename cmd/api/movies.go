@@ -9,7 +9,7 @@ import (
 )
 
 func (app *application) createMovieHandler(c *gin.Context) {
-	c.JSON(200, gin.H{
+	c.IndentedJSON(200, gin.H{
 		"message": "Hello World",
 	})
 
@@ -20,7 +20,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(movieId, 10, 64)
 
 	if err != nil {
-		c.JSON(400, gin.H{
+		c.IndentedJSON(400, gin.H{
 			"message": "Invalid movie id",
 		})
 	}
@@ -35,7 +35,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 		Version:  1,
 	}
 
-	c.JSON(200, gin.H{
+	c.IndentedJSON(200, gin.H{
 		"movie": movie,
 	})
 }
