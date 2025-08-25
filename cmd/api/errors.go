@@ -15,6 +15,10 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
+func badRequest(message string) *AppError {
+	return newAppError(message, http.StatusBadRequest)
+}
+
 func newAppError(message string, code int) *AppError {
 	return &AppError{message, code}
 }

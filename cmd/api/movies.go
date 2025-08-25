@@ -1,6 +1,8 @@
 package main
 
+import "C"
 import (
+	"net/http"
 	"strconv"
 	"time"
 
@@ -9,8 +11,21 @@ import (
 )
 
 func (app *application) createMovieHandler(c *gin.Context) {
-	c.IndentedJSON(200, gin.H{
-		"message": "Hello World",
+
+	var input struct {
+		Title   string   `json:"title"`
+		Year    int      `json:"year"`
+		Runtime int      `json:"runtime"`
+		Genres  []string `json:"genres"`
+	}
+
+	if err := c.ShouldBind(&input); err != nil {
+		c.Error(badRequest("Invalid movie body"))
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"movie":   input,
+		"message": "Successfully created movie",
 	})
 }
 
