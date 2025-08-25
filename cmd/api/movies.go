@@ -19,9 +19,13 @@ func (app *application) createMovieHandler(c *gin.Context) {
 		Genres  []string `json:"genres"`
 	}
 
-	if err := c.ShouldBind(&input); err != nil {
+	if err := app.readJSON(c, &input); err != nil {
 		c.Error(badRequest("Invalid movie body"))
 	}
+
+	//if err := c.ShouldBind(&input); err != nil {
+	//	c.Error(badRequest("Invalid movie body"))
+	//}
 
 	c.IndentedJSON(http.StatusOK, gin.H{
 		"movie":   input,
