@@ -12,7 +12,6 @@ func (app *application) createMovieHandler(c *gin.Context) {
 	c.IndentedJSON(200, gin.H{
 		"message": "Hello World",
 	})
-
 }
 
 func (app *application) showMovieHandler(c *gin.Context) {
@@ -20,9 +19,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(movieId, 10, 64)
 
 	if err != nil {
-		c.IndentedJSON(400, gin.H{
-			"message": "Invalid movie id",
-		})
+		c.Error(newAppError("Invalid movie id", 400))
 	}
 
 	movie := data.Movie{
