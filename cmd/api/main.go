@@ -47,6 +47,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	db.SetConnMaxLifetime(time.Hour)
+	db.SetMaxOpenConns(25)
+	db.SetConnMaxIdleTime(10 * time.Minute)
 
 	log.Println("Connected to Postgres")
 
