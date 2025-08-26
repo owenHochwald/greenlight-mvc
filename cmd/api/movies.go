@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"owenHochwald.greenlight/internal/data"
+	"owenHochwald.greenlight/internal/validator"
 )
 
 func (app *application) createMovieHandler(c *gin.Context) {
@@ -21,13 +22,29 @@ func (app *application) createMovieHandler(c *gin.Context) {
 
 	if err := app.readJSON(c, &input); err != nil {
 		c.Error(badRequest("Invalid movie body"))
+		c.Abort()
+		return
 	}
 
-	//if err := c.ShouldBind(&input); err != nil {
-	//	c.Error(badRequest("Invalid movie body"))
-	//}
+	v := validator.NewValidator()
+
+	movie := &data.Movie{
+		Title:   input.Title,
+		Year:    int32(input.Year),
+		Runtime: input.Runtime,
+		Genres:  input.Genres,
+	}
+
+	data.ValidateMovie(v, movie)
+
+	if !v.Valid() {
+		c.Error(validationError("Make sure movie body is correct", v.Errors))
+		c.Abort()
+		return
+	}
 
 	c.IndentedJSON(http.StatusOK, gin.H{
+		"success": true,
 		"movie":   input,
 		"message": "Successfully created movie",
 	})
@@ -38,7 +55,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(movieId, 10, 64)
 
 	if err != nil {
-		c.Error(newAppError("Invalid movie id", 400))
+		c.Error(validationError("Invalid movie id", nil))
 	}
 
 	movie := data.Movie{

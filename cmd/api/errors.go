@@ -7,8 +7,9 @@ import (
 )
 
 type AppError struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
+	Message string            `json:"message"`
+	Code    int               `json:"code"`
+	Errors  map[string]string `json:"errors,omitempty"`
 }
 
 func (e *AppError) Error() string {
@@ -16,11 +17,17 @@ func (e *AppError) Error() string {
 }
 
 func badRequest(message string) *AppError {
-	return newAppError(message, http.StatusBadRequest)
+	return newAppError(message, http.StatusBadRequest, nil)
 }
 
-func newAppError(message string, code int) *AppError {
-	return &AppError{message, code}
+func newAppError(message string, code int, errors map[string]string) *AppError {
+	return &AppError{
+		message, code, errors,
+	}
+}
+
+func validationError(message string, errors map[string]string) *AppError {
+	return newAppError(message, http.StatusUnprocessableEntity, errors)
 }
 
 func ErrorHandler() gin.HandlerFunc {
@@ -31,10 +38,14 @@ func ErrorHandler() gin.HandlerFunc {
 			err := c.Errors.Last().Err
 
 			if appErr, ok := err.(*AppError); ok {
-				c.JSON(appErr.Code, gin.H{
+				response := gin.H{
 					"success": false,
 					"message": appErr.Message,
-				})
+				}
+				if appErr.Errors != nil && len(appErr.Errors) > 0 {
+					response["errors"] = appErr.Errors
+				}
+				c.JSON(appErr.Code, response)
 				return
 			}
 
