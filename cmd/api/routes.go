@@ -7,5 +7,5 @@ func SetupRoutes(r *gin.Engine, app *application) {
 	r.GET("/v1/healthcheck", app.healthCheckHandler)
 	r.GET("/v1/movies/:id", app.showMovieHandler)
 	r.POST("/v1/movies", app.createMovieHandler)
-
+	r.GET("/v1/movies/", app.showALlMoviesHandler)
 }

@@ -4,7 +4,6 @@ import "C"
 import (
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"owenHochwald.greenlight/internal/data"
@@ -43,6 +42,14 @@ func (app *application) createMovieHandler(c *gin.Context) {
 		return
 	}
 
+	err := app.models.Movies.Insert(movie)
+
+	if err != nil {
+		c.Error(newAppError("Database error", http.StatusInternalServerError, nil))
+		c.Abort()
+		return
+	}
+
 	c.IndentedJSON(http.StatusOK, gin.H{
 		"success": true,
 		"movie":   input,
@@ -58,17 +65,30 @@ func (app *application) showMovieHandler(c *gin.Context) {
 		c.Error(validationError("Invalid movie id", nil))
 	}
 
-	movie := data.Movie{
-		ID:       id,
-		CreateAt: time.Now(),
-		Title:    "test",
-		Year:     2025,
-		Runtime:  120,
-		Genres:   []string{"test"},
-		Version:  1,
+	movie, err := app.models.Movies.Get(id)
+
+	if err != nil {
+		c.Error(newAppError("Database error", http.StatusInternalServerError, nil))
+		c.Abort()
+		return
 	}
 
 	c.IndentedJSON(200, gin.H{
 		"movie": movie,
 	})
+}
+
+func (app *application) showALlMoviesHandler(c *gin.Context) {
+	movies, err := app.models.Movies.GetAll()
+
+	if err != nil {
+		c.Error(newAppError("Database error", http.StatusInternalServerError, nil))
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(200, gin.H{
+		"movies": movies,
+	})
+
 }

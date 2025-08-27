@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/lib/pq"
 	"owenHochwald.greenlight/internal/validator"
 )
 
@@ -23,6 +24,7 @@ type MovieModel struct {
 
 type MovieMockModel struct{}
 
+// mock movie model methods
 func (m MovieMockModel) Get(id int64) (*Movie, error) {
 	return nil, nil
 }
@@ -39,12 +41,52 @@ func (m MovieMockModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MovieModel) Get(id int64) (*Movie, error) {
+func (m MovieMockModel) GetAll() (*[]Movie, error) {
 	return nil, nil
 }
 
+// movie model methods
+func (m MovieModel) Get(id int64) (*Movie, error) {
+	if id < 1 {
+		return nil, nil
+	}
+	var movie Movie
+	query := `
+		SELECT id, created_at, title, year, runtime, genres, version
+		FROM movies
+		WHERE id = $1`
+
+	err := m.DB.QueryRow(query, id).Scan(
+		&movie.ID,
+		&movie.CreateAt,
+		&movie.Title,
+		&movie.Year,
+		&movie.Runtime,
+		pq.Array(&movie.Genres),
+		&movie.Version,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &movie, nil
+}
+
 func (m MovieModel) Insert(movie *Movie) error {
-	return nil
+	query := `
+		INSERT INTO movies (title, year, runtime, genres)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at, version`
+
+	args := []interface{}{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres)}
+
+	err := m.DB.QueryRow(query, args...).Scan(
+		&movie.ID,
+		&movie.CreateAt,
+		&movie.Version,
+	)
+	return err
 }
 
 func (m MovieModel) Update(movie *Movie) error {
@@ -53,6 +95,37 @@ func (m MovieModel) Update(movie *Movie) error {
 
 func (m MovieModel) Delete(id int64) error {
 	return nil
+}
+
+func (m MovieModel) GetAll() (*[]Movie, error) {
+	var movies []Movie
+	query := `
+			SELECT * FROM movies`
+
+	rows, err := m.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var movie Movie
+		err := rows.Scan(
+			&movie.ID,
+			&movie.CreateAt,
+			&movie.Title,
+			&movie.Year,
+			&movie.Runtime,
+			pq.Array(&movie.Genres),
+			&movie.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		movies = append(movies, movie)
+	}
+
+	return &movies, nil
 }
 
 func ValidateMovie(v *validator.Validator, movie *Movie) {
