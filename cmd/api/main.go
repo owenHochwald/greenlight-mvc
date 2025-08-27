@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"owenHochwald.greenlight/internal/data"
 )
 
 type config struct {
@@ -25,6 +26,7 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models *data.Models
 }
 
 const version = "1.0.0"
@@ -61,6 +63,7 @@ func main() {
 	app := application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	r := gin.Default()
