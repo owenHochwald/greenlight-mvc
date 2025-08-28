@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,4 +32,15 @@ func (app *application) readJSON(c *gin.Context, dst interface{}) error {
 	}
 
 	return c.ShouldBindJSON(dst)
+}
+
+func (app *application) parseID(c *gin.Context) (int64, error) {
+	movieId := c.Param("parseID")
+	id, err := strconv.ParseInt(movieId, 10, 64)
+
+	if err != nil {
+		return 0, nil
+	}
+
+	return id, nil
 }

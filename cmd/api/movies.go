@@ -4,7 +4,6 @@ import "C"
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"owenHochwald.greenlight/internal/data"
@@ -59,11 +58,12 @@ func (app *application) createMovieHandler(c *gin.Context) {
 }
 
 func (app *application) showMovieHandler(c *gin.Context) {
-	movieId := c.Param("id")
-	id, err := strconv.ParseInt(movieId, 10, 64)
+	id, err := app.parseID(c)
 
 	if err != nil {
-		c.Error(validationError("Invalid movie id", nil))
+		c.Error(badRequest("Invalid movie parseID"))
+		c.Abort()
+		return
 	}
 
 	movie, err := app.models.Movies.Get(id)
@@ -94,38 +94,39 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 }
 
 func (app *application) updateMovieHandler(c *gin.Context) {
-	movieId := c.Param("id")
-	id, err := strconv.ParseInt(movieId, 10, 64)
+	id, err := app.parseID(c)
 
 	if err != nil {
-		c.Error(badRequest("Invalid id passed"))
+		c.Error(badRequest("Invalid movie parseID"))
+		c.Abort()
+		return
 	}
 
 	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
 	}
 
-	if err = c.ShouldBind(&input); err != nil {
+	if err = app.readJSON(c, &input); err != nil {
 		if err != nil {
 			c.Error(badRequest("Invalid movie object passed"))
 		}
 	}
 
 	movie, err := app.models.Movies.Get(id)
-
-	if err != nil || movie == nil {
-		c.Error(databaseError("Database error"))
+	if err != nil {
+		if movie == nil {
+			c.Error(badRequest(err.Error()))
+		} else {
+			c.Error(databaseError("Failed to retrieve movie from database"))
+		}
 		c.Abort()
 		return
 	}
 
-	movie.Title = input.Title
-	movie.Year = input.Year
-	movie.Runtime = input.Runtime
-	movie.Genres = input.Genres
+	applyMovieUpdates(movie, input)
 
 	data.ValidateMovie(validator.NewValidator(), movie)
 
@@ -138,16 +139,15 @@ func (app *application) updateMovieHandler(c *gin.Context) {
 	}
 
 	c.IndentedJSON(200, gin.H{
-		"message": fmt.Sprintf("successfully updated movie with id %s", movieId),
+		"message": fmt.Sprintf("successfully updated movie with parseID %d", id),
 	})
 }
 
 func (app *application) deleteMovieHandler(c *gin.Context) {
-	movieId := c.Param("id")
-	id, err := strconv.ParseInt(movieId, 10, 64)
+	id, err := app.parseID(c)
 
 	if err != nil {
-		c.Error(badRequest("Invalid id passed"))
+		c.Error(badRequest("Invalid movie parseID"))
 		c.Abort()
 		return
 	}
@@ -155,13 +155,32 @@ func (app *application) deleteMovieHandler(c *gin.Context) {
 	err = app.models.Movies.Delete(id)
 
 	if err != nil {
-		c.Error(databaseError(fmt.Sprintf("Failed to delete movie with id: %s", movieId)))
+		c.Error(databaseError(fmt.Sprintf("Failed to delete movie with parseID: %d", id)))
 		c.Abort()
 		return
 	}
 
 	c.IndentedJSON(200, gin.H{
-		"message": fmt.Sprintf("successfully deleted movie with id %s", movieId),
+		"message": fmt.Sprintf("successfully deleted movie with parseID %d", id),
 	})
+}
 
+func applyMovieUpdates(movie *data.Movie, input struct {
+	Title   *string       `json:"title"`
+	Year    *int32        `json:"year"`
+	Runtime *data.Runtime `json:"runtime"`
+	Genres  []string      `json:"genres"`
+}) {
+	if input.Title != nil {
+		movie.Title = *input.Title
+	}
+	if input.Year != nil {
+		movie.Year = *input.Year
+	}
+	if input.Runtime != nil {
+		movie.Runtime = *input.Runtime
+	}
+	if input.Genres != nil {
+		movie.Genres = input.Genres
+	}
 }
