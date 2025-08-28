@@ -45,7 +45,6 @@ func (m MovieMockModel) GetAll() (*[]Movie, error) {
 	return nil, nil
 }
 
-// movie model methods
 func (m MovieModel) Get(id int64) (*Movie, error) {
 	if id < 1 {
 		return nil, nil
@@ -90,10 +89,35 @@ func (m MovieModel) Insert(movie *Movie) error {
 }
 
 func (m MovieModel) Update(movie *Movie) error {
+	query := `
+            UPDATE movies
+            SET title = $1, year = $2, runtime = $3, genres = $4
+            WHERE id = $5`
+	args := []interface{}{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres), movie.ID}
+
+	_, err := m.DB.Exec(query, args...)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (m MovieModel) Delete(id int64) error {
+	if id < 1 {
+		return nil
+	}
+	query := `
+         DELETE FROM movies
+         WHERE id = $1`
+
+	_, err := m.DB.Exec(query, id)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -20,6 +20,10 @@ func badRequest(message string) *AppError {
 	return newAppError(message, http.StatusBadRequest, nil)
 }
 
+func databaseError(message string) *AppError {
+	return newAppError(message, http.StatusInternalServerError, nil)
+}
+
 func newAppError(message string, code int, errors map[string]string) *AppError {
 	return &AppError{
 		message, code, errors,

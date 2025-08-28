@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -78,7 +79,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 	})
 }
 
-func (app *application) showALlMoviesHandler(c *gin.Context) {
+func (app *application) showAllMoviesHandler(c *gin.Context) {
 	movies, err := app.models.Movies.GetAll()
 
 	if err != nil {
@@ -90,5 +91,33 @@ func (app *application) showALlMoviesHandler(c *gin.Context) {
 	c.IndentedJSON(200, gin.H{
 		"movies": movies,
 	})
+}
+
+func (app *application) deleteMovieHandler(c *gin.Context) {
+	movieId := c.Param("id")
+	id, err := strconv.ParseInt(movieId, 10, 64)
+
+	if err != nil {
+		c.Error(badRequest("Invalid id passed"))
+	}
+
+	movie, err := app.models.Movies.Get(id)
+
+	if err != nil {
+		c.Error(databaseError("Database error"))
+	}
+
+	err = app.models.Movies.Update(movie)
+
+	if err != nil {
+		c.Error(databaseError("Database error"))
+	}
+
+	c.IndentedJSON(200, gin.H{
+		"message": fmt.Sprintf("successfully updated movie with id %s", movieId),
+	})
+}
+
+func (app *application) updateMovieHandler(c *gin.Context) {
 
 }
