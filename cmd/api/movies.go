@@ -2,6 +2,7 @@ package main
 
 import "C"
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -95,7 +96,6 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 
 func (app *application) updateMovieHandler(c *gin.Context) {
 	id, err := app.parseID(c)
-
 	if err != nil {
 		c.Error(badRequest("Invalid movie parseID"))
 		c.Abort()
@@ -110,36 +110,50 @@ func (app *application) updateMovieHandler(c *gin.Context) {
 	}
 
 	if err = app.readJSON(c, &input); err != nil {
-		if err != nil {
-			c.Error(badRequest("Invalid movie object passed"))
-		}
+		c.Error(badRequest("Invalid movie data format"))
+		c.Abort()
+		return
 	}
 
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
-		if movie == nil {
-			c.Error(badRequest(err.Error()))
-		} else {
-			c.Error(databaseError("Failed to retrieve movie from database"))
-		}
+		c.Error(databaseError("Failed to retrieve movie from database"))
+		c.Abort()
+		return
+	}
+
+	if movie == nil {
+		c.Error(badRequest(fmt.Sprintf("Movie with ID %d not found", id)))
 		c.Abort()
 		return
 	}
 
 	applyMovieUpdates(movie, input)
 
-	data.ValidateMovie(validator.NewValidator(), movie)
-
-	err = app.models.Movies.Update(movie)
-
-	if err != nil {
-		c.Error(databaseError("Database error"))
+	v := validator.NewValidator()
+	data.ValidateMovie(v, movie)
+	if !v.Valid() {
+		c.Error(validationError("Movie validation failed", v.Errors))
 		c.Abort()
 		return
 	}
 
-	c.IndentedJSON(200, gin.H{
-		"message": fmt.Sprintf("successfully updated movie with parseID %d", id),
+	err = app.models.Movies.Update(movie)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrMovieEditConflict):
+			c.Error(editConflictError("Edit conflict: movie has been updated by another user"))
+		default:
+			c.Error(serverResponseError("Failed to update movie in database"))
+		}
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"success": true,
+		"movie":   movie,
+		"message": fmt.Sprintf("Successfully updated movie with ID %d", id),
 	})
 }
 

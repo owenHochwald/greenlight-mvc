@@ -24,14 +24,22 @@ func databaseError(message string) *AppError {
 	return newAppError(message, http.StatusInternalServerError, nil)
 }
 
+func validationError(message string, errors map[string]string) *AppError {
+	return newAppError(message, http.StatusUnprocessableEntity, errors)
+}
+
+func editConflictError(message string) *AppError {
+	return newAppError(message, http.StatusConflict, nil)
+}
+
+func serverResponseError(message string) *AppError {
+	return newAppError(message, http.StatusInternalServerError, nil)
+}
+
 func newAppError(message string, code int, errors map[string]string) *AppError {
 	return &AppError{
 		message, code, errors,
 	}
-}
-
-func validationError(message string, errors map[string]string) *AppError {
-	return newAppError(message, http.StatusUnprocessableEntity, errors)
 }
 
 func ErrorHandler() gin.HandlerFunc {
