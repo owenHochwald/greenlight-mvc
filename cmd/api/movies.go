@@ -93,7 +93,7 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 	})
 }
 
-func (app *application) deleteMovieHandler(c *gin.Context) {
+func (app *application) updateMovieHandler(c *gin.Context) {
 	movieId := c.Param("id")
 	id, err := strconv.ParseInt(movieId, 10, 64)
 
@@ -101,16 +101,40 @@ func (app *application) deleteMovieHandler(c *gin.Context) {
 		c.Error(badRequest("Invalid id passed"))
 	}
 
+	var input struct {
+		Title   string       `json:"title"`
+		Year    int32        `json:"year"`
+		Runtime data.Runtime `json:"runtime"`
+		Genres  []string     `json:"genres"`
+	}
+
+	if err = c.ShouldBind(&input); err != nil {
+		if err != nil {
+			c.Error(badRequest("Invalid movie object passed"))
+		}
+	}
+
 	movie, err := app.models.Movies.Get(id)
 
-	if err != nil {
+	if err != nil || movie == nil {
 		c.Error(databaseError("Database error"))
+		c.Abort()
+		return
 	}
+
+	movie.Title = input.Title
+	movie.Year = input.Year
+	movie.Runtime = input.Runtime
+	movie.Genres = input.Genres
+
+	data.ValidateMovie(validator.NewValidator(), movie)
 
 	err = app.models.Movies.Update(movie)
 
 	if err != nil {
 		c.Error(databaseError("Database error"))
+		c.Abort()
+		return
 	}
 
 	c.IndentedJSON(200, gin.H{
@@ -118,6 +142,26 @@ func (app *application) deleteMovieHandler(c *gin.Context) {
 	})
 }
 
-func (app *application) updateMovieHandler(c *gin.Context) {
+func (app *application) deleteMovieHandler(c *gin.Context) {
+	movieId := c.Param("id")
+	id, err := strconv.ParseInt(movieId, 10, 64)
+
+	if err != nil {
+		c.Error(badRequest("Invalid id passed"))
+		c.Abort()
+		return
+	}
+
+	err = app.models.Movies.Delete(id)
+
+	if err != nil {
+		c.Error(databaseError(fmt.Sprintf("Failed to delete movie with id: %s", movieId)))
+		c.Abort()
+		return
+	}
+
+	c.IndentedJSON(200, gin.H{
+		"message": fmt.Sprintf("successfully deleted movie with id %s", movieId),
+	})
 
 }

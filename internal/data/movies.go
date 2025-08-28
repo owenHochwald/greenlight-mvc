@@ -2,11 +2,15 @@ package data
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/lib/pq"
 	"owenHochwald.greenlight/internal/validator"
 )
+
+var ErrMovieNotFound = errors.New("movie not found")
 
 type Movie struct {
 	ID       int64     `json:"id"`
@@ -66,7 +70,7 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, ErrMovieNotFound
 	}
 
 	return &movie, nil
@@ -98,7 +102,7 @@ func (m MovieModel) Update(movie *Movie) error {
 	_, err := m.DB.Exec(query, args...)
 
 	if err != nil {
-		return err
+		return ErrMovieNotFound
 	}
 
 	return nil
@@ -112,10 +116,21 @@ func (m MovieModel) Delete(id int64) error {
          DELETE FROM movies
          WHERE id = $1`
 
-	_, err := m.DB.Exec(query, id)
+	res, err := m.DB.Exec(query, id)
 
 	if err != nil {
 		return err
+	}
+
+	numberRows, err := res.RowsAffected()
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(numberRows)
+	if numberRows == 0 {
+		return ErrMovieNotFound
 	}
 
 	return nil
