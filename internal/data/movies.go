@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ var ErrMovieEditConflict = errors.New("edit conflict")
 
 type Movie struct {
 	ID       int64     `json:"id"`
-	CreateAt time.Time `json:"-"` // '-' hides the field form JSON
+	CreateAt time.Time `json:"-"`
 	Title    string    `json:"title"`
 	Year     int32     `json:"year"`
 	Runtime  Runtime   `json:"runtime"`
@@ -60,7 +61,11 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 		FROM movies
 		WHERE id = $1`
 
-	err := m.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+	// prevent memory leak
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, id).Scan(
 		&movie.ID,
 		&movie.CreateAt,
 		&movie.Title,
@@ -85,7 +90,11 @@ func (m MovieModel) Insert(movie *Movie) error {
 
 	args := []interface{}{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres)}
 
-	err := m.DB.QueryRow(query, args...).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
 		&movie.ID,
 		&movie.CreateAt,
 		&movie.Version,
@@ -108,7 +117,12 @@ func (m MovieModel) Update(movie *Movie) error {
 		movie.ID,
 		movie.Version,
 	}
-	_, err := m.DB.Exec(query, args...)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, args...)
 
 	if err != nil {
 		switch {
@@ -131,7 +145,11 @@ func (m MovieModel) Delete(id int64) error {
          DELETE FROM movies
          WHERE id = $1`
 
-	res, err := m.DB.Exec(query, id)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+
+	defer cancel()
+
+	res, err := m.DB.ExecContext(ctx, query, id)
 
 	if err != nil {
 		return err
@@ -156,7 +174,11 @@ func (m MovieModel) GetAll() (*[]Movie, error) {
 	query := `
 			SELECT * FROM movies`
 
-	rows, err := m.DB.Query(query)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+
+	defer cancel()
+
+	rows, err := m.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
