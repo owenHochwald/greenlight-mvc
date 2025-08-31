@@ -81,6 +81,29 @@ func (app *application) showMovieHandler(c *gin.Context) {
 }
 
 func (app *application) showAllMoviesHandler(c *gin.Context) {
+	var input struct {
+		Title  string
+		Genres []string
+		data.Filters
+	}
+
+	v := validator.NewValidator()
+
+	qs := c.Request.URL.Query()
+
+	input.Title = app.readString(qs, "title", "")
+	input.Genres = app.readCSV(qs, "genres", []string{})
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.SortSafeList = []string{"id", "title", "year", "runtime", "-id", "-title", "-year", "-runtime"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		c.Error(app.validationError("bad user input", v.Errors))
+		c.Abort()
+		return
+	}
+
 	movies, err := app.models.Movies.GetAll()
 
 	if err != nil {

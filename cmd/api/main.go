@@ -68,14 +68,6 @@ func main() {
 
 	r := gin.Default()
 
-	r.Use(ErrorHandler())
-
-	r.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{
-			"Message": "Page not found. Please try a different URL.",
-		})
-	})
-
 	SetupRoutes(r, &app)
 
 	r.Run(fmt.Sprintf(":%d", cfg.port))
