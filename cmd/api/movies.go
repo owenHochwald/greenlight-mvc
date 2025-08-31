@@ -21,7 +21,7 @@ func (app *application) createMovieHandler(c *gin.Context) {
 	}
 
 	if err := app.readJSON(c, &input); err != nil {
-		c.Error(badRequest("Invalid movie body"))
+		c.Error(app.badRequest("Invalid movie body"))
 		c.Abort()
 		return
 	}
@@ -38,7 +38,7 @@ func (app *application) createMovieHandler(c *gin.Context) {
 	data.ValidateMovie(v, movie)
 
 	if !v.Valid() {
-		c.Error(validationError("Make sure movie body is correct", v.Errors))
+		c.Error(app.validationError("Make sure movie body is correct", v.Errors))
 		c.Abort()
 		return
 	}
@@ -62,7 +62,7 @@ func (app *application) showMovieHandler(c *gin.Context) {
 	id, err := app.parseID(c)
 
 	if err != nil {
-		c.Error(badRequest("Invalid movie parseID"))
+		c.Error(app.badRequest("Invalid movie parseID"))
 		c.Abort()
 		return
 	}
@@ -97,7 +97,7 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 func (app *application) updateMovieHandler(c *gin.Context) {
 	id, err := app.parseID(c)
 	if err != nil {
-		c.Error(badRequest("Invalid movie parseID"))
+		c.Error(app.badRequest("Invalid movie parseID"))
 		c.Abort()
 		return
 	}
@@ -110,20 +110,20 @@ func (app *application) updateMovieHandler(c *gin.Context) {
 	}
 
 	if err = app.readJSON(c, &input); err != nil {
-		c.Error(badRequest("Invalid movie data format"))
+		c.Error(app.badRequest("Invalid movie data format"))
 		c.Abort()
 		return
 	}
 
 	movie, err := app.models.Movies.Get(id)
 	if err != nil {
-		c.Error(databaseError("Failed to retrieve movie from database"))
+		c.Error(app.databaseError("Failed to retrieve movie from database"))
 		c.Abort()
 		return
 	}
 
 	if movie == nil {
-		c.Error(badRequest(fmt.Sprintf("Movie with ID %d not found", id)))
+		c.Error(app.badRequest(fmt.Sprintf("Movie with ID %d not found", id)))
 		c.Abort()
 		return
 	}
@@ -133,7 +133,7 @@ func (app *application) updateMovieHandler(c *gin.Context) {
 	v := validator.NewValidator()
 	data.ValidateMovie(v, movie)
 	if !v.Valid() {
-		c.Error(validationError("Movie validation failed", v.Errors))
+		c.Error(app.validationError("Movie validation failed", v.Errors))
 		c.Abort()
 		return
 	}
@@ -142,9 +142,9 @@ func (app *application) updateMovieHandler(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrMovieEditConflict):
-			c.Error(editConflictError("Edit conflict: movie has been updated by another user"))
+			c.Error(app.editConflictError("Edit conflict: movie has been updated by another user"))
 		default:
-			c.Error(serverResponseError("Failed to update movie in database"))
+			c.Error(app.serverResponseError("Failed to update movie in database"))
 		}
 		c.Abort()
 		return
@@ -161,7 +161,7 @@ func (app *application) deleteMovieHandler(c *gin.Context) {
 	id, err := app.parseID(c)
 
 	if err != nil {
-		c.Error(badRequest("Invalid movie parseID"))
+		c.Error(app.badRequest("Invalid movie parseID"))
 		c.Abort()
 		return
 	}
@@ -169,7 +169,7 @@ func (app *application) deleteMovieHandler(c *gin.Context) {
 	err = app.models.Movies.Delete(id)
 
 	if err != nil {
-		c.Error(databaseError(fmt.Sprintf("Failed to delete movie with parseID: %d", id)))
+		c.Error(app.databaseError(fmt.Sprintf("Failed to delete movie with parseID: %d", id)))
 		c.Abort()
 		return
 	}

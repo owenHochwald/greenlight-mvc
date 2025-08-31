@@ -16,23 +16,28 @@ func (e *AppError) Error() string {
 	return e.Message
 }
 
-func badRequest(message string) *AppError {
+func (app *application) badRequest(message string) *AppError {
+	app.logger.Println("Bad user request")
 	return newAppError(message, http.StatusBadRequest, nil)
 }
 
-func databaseError(message string) *AppError {
+func (app *application) databaseError(message string) *AppError {
+	app.logger.Println("Database had unexpected error")
 	return newAppError(message, http.StatusInternalServerError, nil)
 }
 
-func validationError(message string, errors map[string]string) *AppError {
+func (app *application) validationError(message string, errors map[string]string) *AppError {
+	app.logger.Println("Bad JSON object passed in request")
 	return newAppError(message, http.StatusUnprocessableEntity, errors)
 }
 
-func editConflictError(message string) *AppError {
+func (app *application) editConflictError(message string) *AppError {
+	app.logger.Println("Database update edit conflict with concurrent requests")
 	return newAppError(message, http.StatusConflict, nil)
 }
 
-func serverResponseError(message string) *AppError {
+func (app *application) serverResponseError(message string) *AppError {
+	app.logger.Println("Server responded badly")
 	return newAppError(message, http.StatusInternalServerError, nil)
 }
 
