@@ -113,7 +113,10 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 	}
 
 	c.IndentedJSON(200, gin.H{
-		"movies": movies,
+		"movies":       movies,
+		"current_page": input.Filters.Page,
+		"page_size":    input.Filters.PageSize,
+		"total_count":  len(movies),
 	})
 }
 
