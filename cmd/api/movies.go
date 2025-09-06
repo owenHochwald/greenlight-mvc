@@ -104,7 +104,7 @@ func (app *application) showAllMoviesHandler(c *gin.Context) {
 		return
 	}
 
-	movies, err := app.models.Movies.GetAll()
+	movies, err := app.models.Movies.GetAll(input.Title, input.Genres, input.Filters)
 
 	if err != nil {
 		c.Error(newAppError("Database error", http.StatusInternalServerError, nil))

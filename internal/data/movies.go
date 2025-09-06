@@ -47,7 +47,7 @@ func (m MovieMockModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MovieMockModel) GetAll() (*[]Movie, error) {
+func (m MovieMockModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
 	return nil, nil
 }
 
@@ -169,20 +169,32 @@ func (m MovieModel) Delete(id int64) error {
 	return nil
 }
 
-func (m MovieModel) GetAll() (*[]Movie, error) {
-	var movies []Movie
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
+	titleSearch := "%" + title + "%"
+
 	query := `
-			SELECT * FROM movies`
+		SELECT id, created_at, title, year, runtime, genres, version
+		FROM movies
+		WHERE (LOWER(title) LIKE LOWER($1) OR $2 = '')
+		AND (genres @> $3 OR $4 = 0)
+		ORDER BY id`
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query)
+	genresEmpty := 0
+	if len(genres) == 0 {
+		genresEmpty = 1
+	}
+
+	rows, err := m.DB.QueryContext(ctx, query, titleSearch, title, pq.Array(genres), genresEmpty)
 	if err != nil {
+		fmt.Println("Database error:", err)
 		return nil, err
 	}
 	defer rows.Close()
+
+	movies := []*Movie{}
 
 	for rows.Next() {
 		var movie Movie
@@ -198,10 +210,14 @@ func (m MovieModel) GetAll() (*[]Movie, error) {
 		if err != nil {
 			return nil, err
 		}
-		movies = append(movies, movie)
+		movies = append(movies, &movie)
 	}
 
-	return &movies, nil
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return movies, nil
 }
 
 func ValidateMovie(v *validator.Validator, movie *Movie) {

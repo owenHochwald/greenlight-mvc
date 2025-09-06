@@ -8,7 +8,7 @@ type Models struct {
 		Insert(movie *Movie) error
 		Update(movie *Movie) error
 		Delete(id int64) error
-		GetAll() (*[]Movie, error)
+		GetAll(title string, genres []string, filters Filters) ([]*Movie, error)
 	}
 }
 
