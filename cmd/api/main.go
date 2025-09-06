@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
+	//"log"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
 	"owenHochwald.greenlight/internal/data"
 )
 
@@ -25,16 +26,18 @@ type config struct {
 
 type application struct {
 	config config
-	logger *log.Logger
+	logger zerolog.Logger
 	models *data.Models
 }
 
 const version = "1.0.0"
 
 func main() {
+	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logger.Fatal().Err(err).Msg("Error loading .env file")
 	}
 	var cfg config
 
@@ -47,18 +50,15 @@ func main() {
 	// connecting to database
 	db, err := ConnectDB(cfg)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal().Err(err).Msg("Error connecting to database")
 	}
 	db.SetConnMaxLifetime(time.Hour)
 	db.SetMaxOpenConns(25)
 	db.SetConnMaxIdleTime(10 * time.Minute)
 
-	log.Println("Connected to Postgres")
+	logger.Info().Msgf("Connected to Postgres")
 
 	defer db.Close()
-
-	// setting up application and logger
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	app := application{
 		config: cfg,
