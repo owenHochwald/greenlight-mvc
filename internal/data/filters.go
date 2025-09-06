@@ -23,18 +23,27 @@ func ValidateFilters(v *validator.Validator, f Filters) {
 	v.Check(validator.In(f.Sort, f.SortSafeList...), "sort", "Sort option must be valid")
 }
 
-func (f Filters) SortDirection() string {
+func (f Filters) sortDirection() string {
 	if f.Sort != "" && f.Sort[0] == '-' {
 		return "DESC"
 	}
 	return "ASC"
 }
 
-func (f Filters) SortColumn() string {
+func (f Filters) sortColumn() string {
 	if slices.Contains(f.SortSafeList, f.Sort) {
 		if f.Sort[0] == '-' {
 			return f.Sort[1:]
 		}
 	}
-	panic("Unsafe sort value - Triggering the ultra protection fail safes")
+	//panic("Unsafe sort value - Triggering the ultra protection fail safes")
+	return "id"
+}
+
+func (f Filters) offset() int {
+	return (f.Page - 1) * f.PageSize
+}
+
+func (f Filters) limit() int {
+	return f.PageSize
 }

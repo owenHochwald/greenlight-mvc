@@ -177,7 +177,9 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 		FROM movies
 		WHERE (LOWER(title) LIKE LOWER($1) OR $2 = '')
 		AND (genres @> $3 OR $4 = 0)
-		ORDER BY %s %s, id ASC`, filters.SortColumn(), filters.SortDirection())
+		ORDER BY %s %s, id ASC
+		OFFSET $5
+		LIMIT $6`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
@@ -187,7 +189,7 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 		genresEmpty = 1
 	}
 
-	rows, err := m.DB.QueryContext(ctx, query, titleSearch, title, pq.Array(genres), genresEmpty)
+	rows, err := m.DB.QueryContext(ctx, query, titleSearch, title, pq.Array(genres), genresEmpty, filters.offset(), filters.limit())
 	if err != nil {
 		fmt.Println("Database error:", err)
 		return nil, err
