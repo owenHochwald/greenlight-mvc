@@ -172,12 +172,12 @@ func (m MovieModel) Delete(id int64) error {
 func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
 	titleSearch := "%" + title + "%"
 
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, created_at, title, year, runtime, genres, version
 		FROM movies
 		WHERE (LOWER(title) LIKE LOWER($1) OR $2 = '')
 		AND (genres @> $3 OR $4 = 0)
-		ORDER BY id`
+		ORDER BY %s %s, id ASC`, filters.SortColumn(), filters.SortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()

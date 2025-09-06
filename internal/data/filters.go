@@ -1,6 +1,8 @@
 package data
 
 import (
+	"slices"
+
 	"owenHochwald.greenlight/internal/validator"
 )
 
@@ -19,4 +21,20 @@ func ValidateFilters(v *validator.Validator, f Filters) {
 	v.Check(f.PageSize <= 20, "page_size", "Page size is less than 10")
 
 	v.Check(validator.In(f.Sort, f.SortSafeList...), "sort", "Sort option must be valid")
+}
+
+func (f Filters) SortDirection() string {
+	if f.Sort != "" && f.Sort[0] == '-' {
+		return "DESC"
+	}
+	return "ASC"
+}
+
+func (f Filters) SortColumn() string {
+	if slices.Contains(f.SortSafeList, f.Sort) {
+		if f.Sort[0] == '-' {
+			return f.Sort[1:]
+		}
+	}
+	panic("Unsafe sort value - Triggering the ultra protection fail safes")
 }
