@@ -68,6 +68,8 @@ func main() {
 
 	r := gin.Default()
 
+	r.Use(app.rateLimit())
+
 	SetupRoutes(r, &app)
 
 	r.Run(fmt.Sprintf(":%d", cfg.port))

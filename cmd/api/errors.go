@@ -41,6 +41,11 @@ func (app *application) serverResponseError(message string) *AppError {
 	return newAppError(message, http.StatusInternalServerError, nil)
 }
 
+func (app *application) rateLimitExceededResponse(message string) *AppError {
+	app.logger.Error().Msg("Rate limit exceeded - Too many requests")
+	return newAppError(message, http.StatusTooManyRequests, nil)
+}
+
 func newAppError(message string, code int, errors map[string]string) *AppError {
 	return &AppError{
 		message, code, errors,
