@@ -36,7 +36,6 @@ func (f Filters) sortColumn() string {
 			return f.Sort[1:]
 		}
 	}
-	//panic("Unsafe sort value - Triggering the ultra protection fail safes")
 	return "id"
 }
 
